@@ -17,7 +17,11 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -25,7 +29,67 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello, World!")
+	write := flag.Bool("w", false, "write to file")
+	flag.Parse()
+
+	if err := run(*write, flag.Args()); err != nil {
+		fmt.Fprintln(os.Stderr, "mdunwrap:", err)
+		os.Exit(1)
+	}
+}
+
+func run(write bool, args []string) error {
+	switch {
+	case len(args) == 0 && !write:
+		// Simple stdin, stdout.
+		input, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return err
+		}
+		output := filter(input)
+		if _, err := os.Stdout.Write(output); err != nil {
+			return err
+		}
+	case len(args) == 0 && write:
+		return errors.New("must include filenames with -w option")
+	default:
+		for _, fname := range args {
+			flag := os.O_RDONLY
+			if write {
+				flag = os.O_RDWR
+			}
+			f, err := os.OpenFile(fname, flag, 0)
+			if err != nil {
+				return err
+			}
+			input, err := io.ReadAll(f)
+			if err != nil {
+				return fmt.Errorf("%s: %w", fname, err)
+			}
+
+			output := filter(input)
+			if write {
+				if _, err := f.Seek(0, io.SeekStart); err != nil {
+					return fmt.Errorf("%s: %w", fname, err)
+				}
+				if err := f.Truncate(0); err != nil {
+					return fmt.Errorf("%s: %w", fname, err)
+				}
+				if _, err := f.Write(output); err != nil {
+					return fmt.Errorf("%s: %w", fname, err)
+				}
+				if err := f.Close(); err != nil {
+					return fmt.Errorf("%s: %w", fname, err)
+				}
+			} else {
+				f.Close()
+				if _, err := os.Stdout.Write(output); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func filter(doc []byte) []byte {
