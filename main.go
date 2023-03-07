@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
 )
 
@@ -29,7 +30,31 @@ func main() {
 
 func filter(doc []byte) []byte {
 	docNode := goldmark.DefaultParser().Parse(text.NewReader(doc))
-	// TODO(now)
-	_ = docNode
-	return doc
+	var buf []byte
+	ast.Walk(docNode, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		switch n.Kind() {
+		case ast.KindDocument:
+		case ast.KindParagraph:
+			if !entering {
+				buf = append(buf, '\n')
+			}
+		case ast.KindText:
+			if entering {
+				n := n.(*ast.Text)
+				buf = append(buf, n.Text(doc)...)
+				if n.SoftLineBreak() {
+					buf = append(buf, ' ')
+				} else if n.HardLineBreak() {
+					buf = append(buf, '\n')
+				}
+			}
+		default:
+			if entering {
+				buf = append(buf, n.Text(doc)...)
+			}
+			return ast.WalkSkipChildren, nil
+		}
+		return ast.WalkContinue, nil
+	})
+	return buf
 }

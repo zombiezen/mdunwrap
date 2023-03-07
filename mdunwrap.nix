@@ -8,8 +8,7 @@ buildGoModule {
 
   src = ./.;
 
-  # vendorHash = lib.fakeHash;
-  vendorHash = null;
+  vendorHash = "sha256-VObcEfmPvTZ2RfUa+/w9F1P3MpDTDrNqrLyG60lROf4=";
 
   meta = with lib; {
     description = "Markdown unwrapper";
