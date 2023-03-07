@@ -23,9 +23,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/text"
+	"zombiezen.com/go/mdunwrap/internal/markdown"
 )
 
 func main() {
@@ -93,32 +91,7 @@ func run(write bool, args []string) error {
 }
 
 func filter(doc []byte) []byte {
-	docNode := goldmark.DefaultParser().Parse(text.NewReader(doc))
-	var buf []byte
-	ast.Walk(docNode, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		switch n.Kind() {
-		case ast.KindDocument:
-		case ast.KindParagraph:
-			if !entering {
-				buf = append(buf, '\n')
-			}
-		case ast.KindText:
-			if entering {
-				n := n.(*ast.Text)
-				buf = append(buf, n.Text(doc)...)
-				if n.SoftLineBreak() {
-					buf = append(buf, ' ')
-				} else if n.HardLineBreak() {
-					buf = append(buf, '\n')
-				}
-			}
-		default:
-			if entering {
-				buf = append(buf, n.Text(doc)...)
-			}
-			return ast.WalkSkipChildren, nil
-		}
-		return ast.WalkContinue, nil
-	})
-	return buf
+	blocks := markdown.Parse(doc)
+	_ = blocks
+	return doc
 }
