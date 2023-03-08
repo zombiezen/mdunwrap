@@ -23,11 +23,13 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"testing"
 	"unicode"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"go4.org/bytereplacer"
 	"golang.org/x/net/html"
 	. "zombiezen.com/go/mdunwrap/internal/markdown"
 )
@@ -72,7 +74,20 @@ func TestSpec(t *testing.T) {
 
 var whitespaceRE = regexp.MustCompile(`\s+`)
 
+var htmlEscaper = bytereplacer.New(
+	"&", "&amp;",
+	`'`, "&#39;", // "&#39;" is shorter than "&apos;" and apos was not in HTML until HTML5.
+	`<`, "&lt;",
+	`>`, "&gt;",
+	`"`, "&quot;",
+)
+
 func normalizeHTML(b []byte) []byte {
+	type htmlAttribute struct {
+		key   string
+		value string
+	}
+
 	tok := html.NewTokenizer(bytes.NewReader(b))
 	var output []byte
 	last := html.StartTagToken
@@ -84,7 +99,7 @@ func normalizeHTML(b []byte) []byte {
 		case html.ErrorToken:
 			return output
 		case html.TextToken:
-			data := tok.Raw()
+			data := tok.Text()
 			afterTag := last == html.EndTagToken || last == html.StartTagToken
 			afterBlockTag := afterTag && isBlockTag(lastTag)
 			if afterTag && lastTag == "br" {
@@ -100,7 +115,7 @@ func normalizeHTML(b []byte) []byte {
 					data = bytes.TrimSpace(data)
 				}
 			}
-			output = append(output, data...)
+			output = append(output, htmlEscaper.Replace(bytes.Clone(data))...)
 		case html.EndTagToken:
 			tagBytes, _ := tok.TagName()
 			tag := string(tagBytes)
@@ -125,8 +140,26 @@ func normalizeHTML(b []byte) []byte {
 			output = append(output, "<"...)
 			output = append(output, tag...)
 			if hasAttr {
-				// TODO(now)
-				panic("bork")
+				var attrs []htmlAttribute
+				for {
+					k, v, more := tok.TagAttr()
+					attrs = append(attrs, htmlAttribute{string(k), string(v)})
+					if !more {
+						break
+					}
+				}
+				sort.Slice(attrs, func(i, j int) bool {
+					return attrs[i].key < attrs[j].key
+				})
+				for _, attr := range attrs {
+					output = append(output, " "...)
+					output = append(output, attr.key...)
+					if attr.value != "" {
+						output = append(output, `="`...)
+						output = append(output, html.EscapeString(attr.value)...)
+						output = append(output, `"`...)
+					}
+				}
 			}
 			output = append(output, ">"...)
 			lastTag = tag
@@ -212,8 +245,8 @@ func TestNormalizeHTML(t *testing.T) {
 		{"\n\t<p>\n\t\ta  b\t\t</p>\n\t", "<p>a b</p>"},
 		{"<i>a  b</i> ", "<i>a b</i> "},
 		{"<br />", "<br>"},
-		// {`<a title="bar" HREF="foo">x</a>`, `<a href="foo" title="bar">x</a>`},
-		// {"&forall;&amp;&gt;&lt;&quot;", "\u2200&amp;&gt;&lt;&quot;"},
+		{`<a title="bar" HREF="foo">x</a>`, `<a href="foo" title="bar">x</a>`},
+		{"&forall;&amp;&gt;&lt;&quot;", "\u2200&amp;&gt;&lt;&quot;"},
 	}
 	for _, test := range tests {
 		if got := normalizeHTML([]byte(test.b)); string(got) != test.want {
