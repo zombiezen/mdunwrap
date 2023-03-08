@@ -16,9 +16,13 @@
 
 package markdown
 
-import "testing"
+import (
+	"testing"
 
-func TestIsThematicBreak(t *testing.T) {
+	"github.com/google/go-cmp/cmp"
+)
+
+func TestParseThematicBreak(t *testing.T) {
 	tests := []struct {
 		line string
 		want int
@@ -44,7 +48,50 @@ func TestIsThematicBreak(t *testing.T) {
 	}
 	for _, test := range tests {
 		if got := parseThematicBreak([]byte(test.line)); got != test.want {
-			t.Errorf("isThematicBreak(%q) = %d; want %d", test.line, got, test.want)
+			t.Errorf("parseThematicBreak(%q) = %d; want %d", test.line, got, test.want)
+		}
+	}
+}
+
+func TestParseATXHeading(t *testing.T) {
+	tests := []struct {
+		line string
+		want atxHeading
+	}{
+		{"# foo\n", atxHeading{level: 1, contentStart: 2, contentEnd: 5}},
+		{"## foo\n", atxHeading{level: 2, contentStart: 3, contentEnd: 6}},
+		{"### foo\n", atxHeading{level: 3, contentStart: 4, contentEnd: 7}},
+		{"#### foo\n", atxHeading{level: 4, contentStart: 5, contentEnd: 8}},
+		{"##### foo\n", atxHeading{level: 5, contentStart: 6, contentEnd: 9}},
+		{"###### foo\n", atxHeading{level: 6, contentStart: 7, contentEnd: 10}},
+		{"####### foo\n", atxHeading{}},
+		{"#5 bolt\n", atxHeading{}},
+		{"#hashtag\n", atxHeading{}},
+		{"\\## foo\n", atxHeading{}},
+		{"# foo *bar* \\*baz\\*\n", atxHeading{level: 1, contentStart: 2, contentEnd: 19}},
+		{
+			"#                  foo                     \n",
+			atxHeading{level: 1, contentStart: 19, contentEnd: 22},
+		},
+		{"## foo ##\n", atxHeading{level: 2, contentStart: 3, contentEnd: 6}},
+		{"# foo ##################################\n", atxHeading{level: 1, contentStart: 2, contentEnd: 5}},
+		{"##### foo ##\n", atxHeading{level: 5, contentStart: 6, contentEnd: 9}},
+		{"### foo ###     \n", atxHeading{level: 3, contentStart: 4, contentEnd: 7}},
+		{"### foo ### b\n", atxHeading{level: 3, contentStart: 4, contentEnd: 13}},
+		{"# foo#\n", atxHeading{level: 1, contentStart: 2, contentEnd: 6}},
+		{"### foo \\###\n", atxHeading{level: 3, contentStart: 4, contentEnd: 12}},
+		{"## foo #\\##\n", atxHeading{level: 2, contentStart: 3, contentEnd: 11}},
+		{"# foo \\#\n", atxHeading{level: 1, contentStart: 2, contentEnd: 8}},
+		{"## \n", atxHeading{level: 2, contentStart: 3, contentEnd: 3}},
+		{"#\n", atxHeading{level: 1, contentStart: 1, contentEnd: 1}},
+		{"### ###\n", atxHeading{level: 3, contentStart: 4, contentEnd: 4}},
+
+		{"# foo \\  #\n", atxHeading{level: 1, contentStart: 2, contentEnd: 8}},
+	}
+	for _, test := range tests {
+		got := parseATXHeading([]byte(test.line))
+		if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(atxHeading{})); diff != "" {
+			t.Errorf("parseATXHeading(%q) (-want +got):\n%s", test.line, diff)
 		}
 	}
 }

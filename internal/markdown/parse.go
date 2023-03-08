@@ -202,13 +202,39 @@ func identifyLine(dst []linePrefix, line []byte) []linePrefix {
 		}
 
 		// Now start checking for indicators.
+		if pos < len(line) && line[pos] == '>' {
+			dst = append(dst, linePrefix{
+				kind:  BlockQuoteKind,
+				start: pos,
+				end:   pos + 1,
+			})
+			pos++
+			if pos < len(line) && line[pos] == ' ' {
+				pos++
+			}
+			continue
+		}
 		if end := parseThematicBreak(line[pos:]); end >= 0 {
 			return append(dst, linePrefix{
 				kind:  ThematicBreakKind,
-				start: start,
-				end:   end,
+				start: pos,
+				end:   pos + end,
 			})
 		}
+		if h := parseATXHeading(line[pos:]); h.level != 0 {
+			return append(dst, linePrefix{
+				kind:  ATXHeadingKind,
+				start: pos,
+				end:   pos + h.level,
+			})
+		}
+
+		// Did not match anything else. Assume it's a paragraph.
+		return append(dst, linePrefix{
+			kind:  ParagraphKind,
+			start: pos,
+			end:   pos,
+		})
 	}
 }
 
@@ -251,4 +277,103 @@ func parseThematicBreak(line []byte) (end int) {
 		return -1
 	}
 	return end
+}
+
+type atxHeading struct {
+	level        int // 1-6
+	contentStart int
+	contentEnd   int
+}
+
+// parseATXHeading attempts to parse the line as an [ATX heading].
+// The level is zero if the line is not an ATX heading.
+// parseATXHeading assumes that the caller has stripped any leading indentation.
+//
+// [ATX heading]: https://spec.commonmark.org/0.30/#atx-headings
+func parseATXHeading(line []byte) atxHeading {
+	var h atxHeading
+	for h.level < len(line) && line[h.level] == '#' {
+		h.level++
+	}
+	if h.level == 0 || h.level > 6 {
+		return atxHeading{}
+	}
+
+	// Consume required whitespace before heading.
+	i := h.level
+	if i >= len(line) || line[i] == '\n' || line[i] == '\r' {
+		h.contentStart = i
+		h.contentEnd = i
+		return h
+	}
+	if !(line[i] == ' ' || line[i] == '\t') {
+		return atxHeading{}
+	}
+	i++
+
+	// Advance past leading whitespace.
+	for i < len(line) && line[i] == ' ' || line[i] == '\t' {
+		i++
+	}
+	h.contentStart = i
+
+	// Find end of heading line. Skip past trailing spaces.
+	h.contentEnd = len(line)
+	hitHash := false
+scanBack:
+	for ; h.contentEnd > h.contentStart; h.contentEnd-- {
+		switch line[h.contentEnd-1] {
+		case '\r', '\n':
+			// Skip past EOL.
+		case ' ', '\t':
+			if isEndEscaped(line[:h.contentEnd-1]) {
+				break scanBack
+			}
+		case '#':
+			hitHash = true
+			break scanBack
+		default:
+			break scanBack
+		}
+	}
+	if !hitHash {
+		return h
+	}
+
+	// We've encountered one hashmark '#'.
+	// Consume all of them, unless they are preceded by a space or tab.
+scanTrailingHashes:
+	for i := h.contentEnd - 1; ; i-- {
+		if i <= h.contentStart {
+			h.contentEnd = h.contentStart
+			break
+		}
+		switch line[i] {
+		case '#':
+			// Keep going.
+		case ' ', '\t':
+			h.contentEnd = i + 1
+			break scanTrailingHashes
+		default:
+			return h
+		}
+	}
+	// We've hit the end of hashmarks. Trim trailing whitespace.
+	for ; h.contentEnd > h.contentStart; h.contentEnd-- {
+		if b := line[h.contentEnd-1]; !(b == ' ' || b == '\t') || isEndEscaped(line[:h.contentEnd-1]) {
+			break
+		}
+	}
+	return h
+}
+
+// isEndEscaped reports whether s ends with an odd number of backslashes.
+func isEndEscaped(s []byte) bool {
+	n := 0
+	for ; n < len(s); n++ {
+		if s[len(s)-n-1] != '\\' {
+			break
+		}
+	}
+	return n%2 == 1
 }
