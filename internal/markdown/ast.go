@@ -30,6 +30,32 @@ type Block struct {
 	Children []Child
 }
 
+func (b *Block) HeadingLevel(source []byte) int {
+	switch b.Kind {
+	case ATXHeadingKind:
+		span := source[b.Start:b.End]
+		for i := 0; i < len(span) && i < 6; i++ {
+			if span[i] != '#' {
+				return i
+			}
+		}
+		return 6
+	default:
+		return 0
+	}
+}
+
+func (b *Block) ToChild() Child {
+	return Child{
+		typ:   childTypeBlock,
+		block: *b,
+	}
+}
+
+func (b *Block) isOpen() bool {
+	return b.End < 0
+}
+
 type BlockKind uint16
 
 const (
@@ -52,7 +78,24 @@ type Inline struct {
 	End   int
 }
 
+func (inline *Inline) ToChild() Child {
+	return Child{
+		typ: childTypeInline,
+		block: Block{
+			Kind:  BlockKind(inline.Kind),
+			Start: inline.Start,
+			End:   inline.End,
+		},
+	}
+}
+
 type InlineKind uint16
+
+const (
+	TextKind InlineKind = 1 + iota
+	SoftLineBreakKind
+	HardLineBreakKind
+)
 
 type Child struct {
 	block Block

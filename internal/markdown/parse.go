@@ -38,6 +38,8 @@ type Parser struct {
 
 	r   io.Reader
 	err error // non-nil indicates there is no more data after end of buf
+
+	linePrefixBuf []linePrefix
 }
 
 func NewParser(r io.Reader) *Parser {
@@ -67,7 +69,9 @@ func Parse(source []byte) []*RootBlock {
 func (p *Parser) NextBlock() (*RootBlock, error) {
 	// Keep going until we encounter a non-blank line.
 	var line []byte
+	var linePos int
 	for {
+		linePos = p.parsePos
 		line = p.readline()
 		if len(line) == 0 {
 			return nil, p.err
@@ -78,12 +82,52 @@ func (p *Parser) NextBlock() (*RootBlock, error) {
 
 		p.offset += int64(p.parsePos)
 		p.buf = p.buf[p.parsePos:]
+		p.parsePos = 0
 	}
 
 	// Open root block.
 	root := &RootBlock{
 		StartLine:   p.lineno,
 		StartOffset: p.offset,
+		Block: Block{
+			Start: 0,
+			End:   -1,
+		},
+	}
+	linePrefixes := identifyLine(p.linePrefixBuf[:0], line)
+	root.Kind = linePrefixes[0].kind
+	switch root.Kind {
+	case ParagraphKind:
+		inline := &Inline{
+			Kind:  TextKind,
+			Start: linePos + linePrefixes[0].start,
+			End:   linePos + len(line),
+		}
+		root.Children = append(root.Children, inline.ToChild())
+	case ThematicBreakKind:
+		root.End = len(line)
+	}
+
+	// Continue scanning lines until all blocks are closed.
+	for root.isOpen() {
+		linePos = p.parsePos
+		line = p.readline()
+		if len(line) == 0 {
+			root.End = p.parsePos
+			break
+		}
+		linePrefixes = identifyLine(p.linePrefixBuf[:0], line)
+		if len(linePrefixes) == 0 || linePrefixes[0].kind != root.Kind {
+			root.End = linePos
+			p.parsePos = linePos
+			break
+		}
+		inline := &Inline{
+			Kind:  TextKind,
+			Start: linePos + linePrefixes[0].start,
+			End:   linePos + len(line),
+		}
+		root.Children = append(root.Children, inline.ToChild())
 	}
 
 	root.Source = p.consume()

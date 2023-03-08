@@ -8,7 +8,7 @@ buildGoModule {
 
   src = ./.;
 
-  vendorHash = "sha256-g0KKT6vNd4csP01gYTKgEtQxSF2MWccvkObWp7LCT9w=";
+  vendorHash = "sha256-fgYQzbKAHY7okJxnas06c3uVeLmQFbkhHAk8QGnJWic=";
 
   meta = with lib; {
     description = "Markdown unwrapper";
