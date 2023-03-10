@@ -200,6 +200,7 @@ const (
 	TextKind InlineKind = 1 + iota
 	SoftLineBreakKind
 	HardLineBreakKind
+	CodeIndentKind
 
 	// UnparsedKind is used for inline text that has not been tokenized.
 	UnparsedKind

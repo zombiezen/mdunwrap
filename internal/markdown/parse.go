@@ -199,7 +199,6 @@ func openNewBlocks(root *RootBlock, container *Block, allMatched bool, remaining
 			root.end = lineStart
 			return nil, nil
 		}
-		container.lastChild().Block().close(lineStart)
 		parent, newChild = appendNewBlock(root, container, kind, lineStart, remainingStart+start)
 		container = newChild
 		containerKind = parserBlockKind(container)
@@ -295,7 +294,22 @@ func appendNewBlock(root *RootBlock, parent *Block, kind BlockKind, lineStart, s
 }
 
 func addLineText(root *RootBlock, container *Block, remaining []byte, lineStart, remainingStart int) {
-	if parserBlockKind(container).acceptsLines() {
+	containerKind := parserBlockKind(container)
+	if containerKind == FencedCodeBlockKind || containerKind == IndentedCodeBlockKind {
+		_, indentEnd := consumeIndent(remaining)
+		container.children = append(container.children,
+			(&Inline{
+				kind:  CodeIndentKind,
+				start: remainingStart,
+				end:   remainingStart + indentEnd,
+			}).AsNode(),
+			(&Inline{
+				kind:  UnparsedKind,
+				start: remainingStart + indentEnd,
+				end:   remainingStart + len(remaining),
+			}).AsNode(),
+		)
+	} else if containerKind.acceptsLines() {
 		container.children = append(container.children, (&Inline{
 			kind:  UnparsedKind,
 			start: remainingStart,
