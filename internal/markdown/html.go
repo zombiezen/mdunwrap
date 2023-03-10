@@ -39,10 +39,10 @@ func RenderHTML(w io.Writer, blocks []*RootBlock) error {
 }
 
 func appendHTML(dst []byte, source []byte, block *Block) []byte {
-	switch block.Kind {
+	switch block.Kind() {
 	case ParagraphKind:
 		dst = append(dst, "<p>"...)
-		dst = appendChildrenHTML(dst, source, block.Children)
+		dst = appendChildrenHTML(dst, source, block.Children())
 		dst = append(dst, "</p>"...)
 	case ThematicBreakKind:
 		dst = append(dst, "<hr>"...)
@@ -51,30 +51,30 @@ func appendHTML(dst []byte, source []byte, block *Block) []byte {
 		dst = append(dst, "<h"...)
 		dst = strconv.AppendInt(dst, int64(level), 10)
 		dst = append(dst, ">"...)
-		dst = appendChildrenHTML(dst, source, block.Children)
+		dst = appendChildrenHTML(dst, source, block.Children())
 		dst = append(dst, "</h"...)
 		dst = strconv.AppendInt(dst, int64(level), 10)
 		dst = append(dst, ">"...)
 	case IndentedCodeBlockKind, FencedCodeBlockKind:
 		dst = append(dst, "<pre><code>"...)
-		dst = appendChildrenHTML(dst, source, block.Children)
+		dst = appendChildrenHTML(dst, source, block.Children())
 		dst = append(dst, "</code></pre>"...)
 	case BlockQuoteKind:
 		dst = append(dst, "<blockquote>"...)
-		dst = appendChildrenHTML(dst, source, block.Children)
+		dst = appendChildrenHTML(dst, source, block.Children())
 		dst = append(dst, "</blockquote>"...)
 	}
 	return dst
 }
 
-func appendChildrenHTML(dst []byte, source []byte, children []Child) []byte {
+func appendChildrenHTML(dst []byte, source []byte, children []Node) []byte {
 	for _, c := range children {
-		if inline := c.Inline(); inline.Kind != 0 {
-			dst = appendInlineHTML(dst, source, &inline)
+		if inline := c.Inline(); inline != nil {
+			dst = appendInlineHTML(dst, source, inline)
 			continue
 		}
-		if sub := c.Block(); sub.Kind != 0 {
-			dst = appendHTML(dst, source, &sub)
+		if sub := c.Block(); sub != nil {
+			dst = appendHTML(dst, source, sub)
 			continue
 		}
 	}
@@ -82,9 +82,9 @@ func appendChildrenHTML(dst []byte, source []byte, children []Child) []byte {
 }
 
 func appendInlineHTML(dst []byte, source []byte, inline *Inline) []byte {
-	switch inline.Kind {
-	case TextKind:
-		dst = append(dst, html.EscapeString(string(source[inline.Start:inline.End]))...)
+	switch inline.Kind() {
+	case TextKind, UnparsedKind:
+		dst = append(dst, html.EscapeString(string(source[inline.Start():inline.End()]))...)
 	case SoftLineBreakKind:
 		dst = append(dst, '\n')
 	case HardLineBreakKind:

@@ -36,6 +36,7 @@ import (
 
 var supportedSections = map[string]struct{}{
 	"Thematic breaks": {},
+	"Paragraphs":      {},
 }
 
 func TestSpec(t *testing.T) {
