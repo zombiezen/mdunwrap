@@ -155,13 +155,9 @@ func descendOpenBlocks(root *RootBlock, line []byte) (container *Block, rest []b
 			// Include entire indent so that we can interpret spacing later.
 			return container, line, false
 		case ParagraphKind:
-			if indent >= codeBlockIndentLimit {
-				return parent, line, false
-			}
 			if isBlankLine(line) {
 				return parent, line, false
 			}
-			line = line[pos:]
 		default:
 			panic("unreachable")
 		}
@@ -211,11 +207,12 @@ func openNewBlocks(root *RootBlock, container *Block, allMatched bool, remaining
 		containerKind != HTMLBlockKind {
 		indent, pos := consumeIndent(remaining)
 		if indent >= codeBlockIndentLimit {
+			if containerKind == ParagraphKind || isBlankLine(remaining[pos:]) {
+				break
+			}
 			addBlock(IndentedCodeBlockKind, 0)
 			continue
-		}
-
-		if end := parseBlockQuote(remaining[pos:]); end >= 0 {
+		} else if end := parseBlockQuote(remaining[pos:]); end >= 0 {
 			addBlock(BlockQuoteKind, pos)
 			remaining = remaining[end:]
 			remainingStart += end
