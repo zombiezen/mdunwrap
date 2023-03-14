@@ -6,7 +6,10 @@
 
 let
   entrypoint = "mdunwrap.ts";
-  vendorHash = "sha256-fKID+ODKWTJ8dg0RhEkNhbSIU4WhPINdR4waE9442aI=";
+  testFiles = [
+    "mdunwrap_test.ts"
+  ];
+  vendorHash = "sha256-1XxJtHqjtqWUaLoXA5lQWA/dnXIIPXnca+KT15aXm3Q=";
 
   vendor = stdenv.mkDerivation {
     name = "mdunwrap-vendor";
@@ -28,7 +31,7 @@ let
     buildPhase = ''
       runHook preBuild
       export DENO_DIR="$TMPDIR/deno"
-      deno vendor --output=vendor ${entrypoint}
+      deno vendor --output=vendor ${entrypoint} ${builtins.concatStringsSep " " testFiles}
       mkdir -p vendor
       runHook postBuild
     '';
@@ -69,6 +72,17 @@ stdenv.mkDerivation {
     mkdir -p $out/bin
     cp --reflink=auto mdunwrap $out/bin/
     runHook postInstall
+  '';
+
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    deno test \
+      --no-remote \
+      --import-map=${vendor}/import_map.json \
+      --allow-read=testdata \
+      ${builtins.concatStringsSep " " testFiles}
+    runHook postCheck
   '';
 
   passthru.vendor = vendor;
