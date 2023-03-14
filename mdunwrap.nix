@@ -6,7 +6,7 @@
 
 let
   entrypoint = "mdunwrap.ts";
-  vendorHash = "sha256-0qJXIJdrnmVVgn8OFwF+EOxtwHe9jMwO+JCZXE78MEU=";
+  vendorHash = "sha256-22JMTsSe4pH4PTnmsBENtc53MauXGpct3RjXsSmlgoo=";
 
   vendor = stdenv.mkDerivation {
     name = "mdunwrap-vendor";
@@ -50,6 +50,7 @@ stdenv.mkDerivation {
   nativeBuildInputs = [ deno ];
 
   dontConfigure = true;
+  dontFixup = true;
 
   buildPhase = ''
     runHook preBuild

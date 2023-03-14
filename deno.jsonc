@@ -1,6 +1,6 @@
 {
   "imports": {
-    "npm:commonmark@0.30.0": "https://unpkg.com/commonmark@0.30.0/dist/commonmark.js",
+    "npm:commonmark@0.30.0": "https://esm.sh/commonmark@0.30.0?no-dts",
     "npm:@types/commonmark@0.27.5": "https://unpkg.com/@types/commonmark@0.27.5/index.d.ts",
   },
   "fmt": {

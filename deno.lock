@@ -3,7 +3,11 @@
   "remote": {
     "https://deno.land/std@0.179.0/_util/asserts.ts": "178dfc49a464aee693a7e285567b3d0b555dc805ff490505a8aae34f9cfb1462",
     "https://deno.land/std@0.179.0/flags/mod.ts": "d1cdefa18472ef69858a17df5cf7c98445ed27ac10e1460183081303b0ebc270",
-    "https://unpkg.com/@types/commonmark@0.27.5/index.d.ts": "766503f3f97589504a725b3ee84309e56d569ec8e29032a655732be1dcd78df0",
-    "https://unpkg.com/commonmark@0.30.0/dist/commonmark.js": "3b011b21dcbc1b502d5bcf0b4eacb1318bd0e0e80813d1c8ede1e4eec8a3e82a"
+    "https://esm.sh/commonmark@0.30.0?no-dts": "8dd0a4dfaeb6c764d0e516fc041cbf37de188b7d6ebca9b686339694642097bf",
+    "https://esm.sh/v111/commonmark@0.30.0/deno/commonmark.js": "9f8f19066c477e92d7cd650e869cb2c5b25128ad62373cd165e954367b747943",
+    "https://esm.sh/v111/entities@2.0.3/deno/entities.js": "6082a2a24f249d6454b2fc8050791db5558a6b710e16407fc1b6a99b344d224e",
+    "https://esm.sh/v111/mdurl@1.0.1/deno/encode.js": "4901d642c3e0bf63cca00d3c46e017b6184b73c14e81348f164b7814037ffc06",
+    "https://esm.sh/v111/string.prototype.repeat@0.2.0/deno/string.prototype.repeat.js": "9cb14a52d2b588ae8e6009da995261846b4940e92ae73871347aa2dd7df9845f",
+    "https://unpkg.com/@types/commonmark@0.27.5/index.d.ts": "766503f3f97589504a725b3ee84309e56d569ec8e29032a655732be1dcd78df0"
   }
 }
