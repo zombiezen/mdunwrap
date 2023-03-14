@@ -32,9 +32,17 @@ export function filter(doc: string): string {
   const walker = parsed.walker();
 
   let event: commonmark.NodeWalkingStep | null;
+  let firstBlock = true;
   const parts: string[] = [];
   const prefix: string[] = [];
   while ((event = walker.next())) {
+    if (event.entering && isBlock(event.node)) {
+      if (firstBlock) {
+        firstBlock = false;
+      } else {
+        parts.push("\n");
+      }
+    }
     switch (event.node.type) {
       case "text":
         parts.push(event.node.literal ?? "<null>");
@@ -59,7 +67,11 @@ export function filter(doc: string): string {
           parts.push(event.node.literal ?? "");
           parts.push("```\n\n");
         } else {
-          for (const line of (event.node.literal ?? "").split("\n")) {
+          let contents = event.node.literal ?? "";
+          if (contents.endsWith("\n")) {
+            contents = contents.substring(0, contents.length - 1);
+          }
+          for (const line of contents.split("\n")) {
             parts.push("    ");
             parts.push(line);
             parts.push("\n");
@@ -68,7 +80,7 @@ export function filter(doc: string): string {
         break;
       case "paragraph":
         if (!event.entering) {
-          parts.push("\n\n");
+          parts.push("\n");
         }
         break;
       case "document":
@@ -141,6 +153,23 @@ function nopCloser(r: Deno.Reader): Deno.Reader & Deno.Closer {
     },
     close() {},
   };
+}
+
+const BLOCK_TYPES = new Set<commonmark.NodeType>([
+  "block_quote",
+  "code_block",
+  "custom_block",
+  "heading",
+  "html_block",
+  "item",
+  "list",
+  "paragraph",
+  "thematic_break",
+]);
+
+/** Reports whether a node is a block, excluding `document`. */
+function isBlock(node: commonmark.Node): boolean {
+  return BLOCK_TYPES.has(node.type);
 }
 
 if (import.meta.main) {
