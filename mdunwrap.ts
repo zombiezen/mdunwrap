@@ -15,6 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { parse as parseFlags } from "https://deno.land/std@0.179.0/flags/mod.ts";
+import { readableStreamFromReader } from "https://deno.land/std@0.179.0/streams/mod.ts";
 
 // @deno-types="npm:@types/commonmark@0.27.5"
 import * as commonmark from "npm:commonmark@0.30.0";
@@ -91,22 +92,55 @@ async function run(write: boolean, args: string[]): Promise<void> {
     await Deno.stdout.write(output);
   } else if (args.length === 0 && write) {
     await Deno.stderr.write(
-      new TextEncoder().encode("must include filenames with -w option"),
+      new TextEncoder().encode(
+        "mdunwrap: must include filenames with -w option",
+      ),
     );
   } else {
-    for (const _fname of args) {
-      // TODO(now)
+    const enc = new TextEncoder();
+    for (const fname of args) {
+      const f = await Deno.open(fname, { read: true, write });
+      try {
+        // TODO(someday): We should be able to use readAllString(f.readable),
+        // but as of Deno 1.31.1, https://github.com/denoland/deno/issues/17828
+        // causes its usage to automatically close the file.
+        const input = await readAllString(
+          readableStreamFromReader(nopCloser(f)),
+        );
+
+        const output = enc.encode(filter(input));
+        if (write) {
+          await f.seek(0, Deno.SeekMode.Start);
+          await f.truncate();
+          await f.write(output);
+        } else {
+          await Deno.stdout.write(output);
+        }
+      } finally {
+        f.close();
+      }
     }
   }
 }
 
 async function readAllString(r: ReadableStream<Uint8Array>): Promise<string> {
   const parts: string[] = [];
-  const stream = await r.pipeThrough(new TextDecoderStream());
-  for await (const chunk of stream) {
-    parts.push(chunk);
-  }
+  const sink = new WritableStream<string>({
+    write(chunk) {
+      parts.push(chunk);
+    },
+  });
+  await r.pipeThrough(new TextDecoderStream()).pipeTo(sink);
   return parts.join("");
+}
+
+function nopCloser(r: Deno.Reader): Deno.Reader & Deno.Closer {
+  return {
+    read(p) {
+      return r.read(p);
+    },
+    close() {},
+  };
 }
 
 if (import.meta.main) {

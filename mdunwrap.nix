@@ -6,7 +6,7 @@
 
 let
   entrypoint = "mdunwrap.ts";
-  vendorHash = "sha256-22JMTsSe4pH4PTnmsBENtc53MauXGpct3RjXsSmlgoo=";
+  vendorHash = "sha256-fKID+ODKWTJ8dg0RhEkNhbSIU4WhPINdR4waE9442aI=";
 
   vendor = stdenv.mkDerivation {
     name = "mdunwrap-vendor";
