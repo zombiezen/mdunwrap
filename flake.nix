@@ -14,12 +14,12 @@
       };
     in
     {
-      # packages.default = pkgs.callPackage ./mdunwrap.nix {};
+      packages.default = pkgs.callPackage ./mdunwrap.nix {};
 
-      # apps.default = {
-      #   type = "app";
-      #   program = "${self.packages.${system}.default}/bin/mdunwrap";
-      # };
+      apps.default = {
+        type = "app";
+        program = "${self.packages.${system}.default}/bin/mdunwrap";
+      };
 
       devShells.default = pkgs.mkShell {
         packages = [

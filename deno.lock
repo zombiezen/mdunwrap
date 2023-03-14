@@ -2,43 +2,8 @@
   "version": "2",
   "remote": {
     "https://deno.land/std@0.179.0/_util/asserts.ts": "178dfc49a464aee693a7e285567b3d0b555dc805ff490505a8aae34f9cfb1462",
-    "https://deno.land/std@0.179.0/flags/mod.ts": "d1cdefa18472ef69858a17df5cf7c98445ed27ac10e1460183081303b0ebc270"
-  },
-  "npm": {
-    "specifiers": {
-      "@types/commonmark@0.27.5": "@types/commonmark@0.27.5",
-      "commonmark@0.30.0": "commonmark@0.30.0"
-    },
-    "packages": {
-      "@types/commonmark@0.27.5": {
-        "integrity": "sha512-vIqgmHyLsc8Or3EWLz6QkhI8/v61FNeH0yxRupA7VqSbA2eFMoHHJAhZSHudplAV89wqg1CKSmShE016ziRXuw==",
-        "dependencies": {}
-      },
-      "commonmark@0.30.0": {
-        "integrity": "sha512-j1yoUo4gxPND1JWV9xj5ELih0yMv1iCWDG6eEQIPLSWLxzCXiFoyS7kvB+WwU+tZMf4snwJMMtaubV0laFpiBA==",
-        "dependencies": {
-          "entities": "entities@2.0.3",
-          "mdurl": "mdurl@1.0.1",
-          "minimist": "minimist@1.2.8",
-          "string.prototype.repeat": "string.prototype.repeat@0.2.0"
-        }
-      },
-      "entities@2.0.3": {
-        "integrity": "sha512-MyoZ0jgnLvB2X3Lg5HqpFmn1kybDiIfEQmKzTb5apr51Rb+T3KdmMiqa70T+bhGnyv7bQ6WMj2QMHpGMmlrUYQ==",
-        "dependencies": {}
-      },
-      "mdurl@1.0.1": {
-        "integrity": "sha512-/sKlQJCBYVY9Ers9hqzKou4H6V5UWc/M59TH2dvkt+84itfnq7uFOMLpOiOS4ujvHP4etln18fmIxA5R5fll0g==",
-        "dependencies": {}
-      },
-      "minimist@1.2.8": {
-        "integrity": "sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==",
-        "dependencies": {}
-      },
-      "string.prototype.repeat@0.2.0": {
-        "integrity": "sha512-1BH+X+1hSthZFW+X+JaUkjkkUPwIlLEMJBLANN3hOob3RhEk5snLWNECDnYbgn/m5c5JV7Ersu1Yubaf+05cIA==",
-        "dependencies": {}
-      }
-    }
+    "https://deno.land/std@0.179.0/flags/mod.ts": "d1cdefa18472ef69858a17df5cf7c98445ed27ac10e1460183081303b0ebc270",
+    "https://unpkg.com/@types/commonmark@0.27.5/index.d.ts": "766503f3f97589504a725b3ee84309e56d569ec8e29032a655732be1dcd78df0",
+    "https://unpkg.com/commonmark@0.30.0/dist/commonmark.js": "3b011b21dcbc1b502d5bcf0b4eacb1318bd0e0e80813d1c8ede1e4eec8a3e82a"
   }
 }
