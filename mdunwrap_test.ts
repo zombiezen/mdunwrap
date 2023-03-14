@@ -13,7 +13,9 @@ Deno.test(async function filterTest(t) {
     const base = ent.name.substring(0, ent.name.length - suffix.length);
     await t.step(base, async () => {
       const input = await Deno.readTextFile(path.join(dataDirectory, ent.name));
-      const want = await Deno.readTextFile(path.join(dataDirectory, base + ".out.md"));
+      const want = await Deno.readTextFile(
+        path.join(dataDirectory, base + ".out.md"),
+      );
       const got = filter(input);
       assertEquals(got, want);
     });
