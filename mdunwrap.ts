@@ -40,7 +40,9 @@ export function filter(doc: string): string {
       if (firstBlock) {
         firstBlock = false;
       } else if (event.node.type !== "item" || event.node.parent?.listTight === false) {
+        parts.push(...prefixTrimRight(prefix));
         parts.push("\n");
+        parts.push(...prefix);
       }
     }
     switch (event.node.type) {
@@ -93,37 +95,77 @@ export function filter(doc: string): string {
         }
         break;
       case "code_block":
-        if (event.node._isFenced) {
-          parts.push("```");
-          if (event.node.info) {
-            parts.push(event.node.info);
+        {
+          if (event.node._isFenced) {
+            parts.push("```");
+            if (event.node.info) {
+              parts.push(event.node.info);
+            }
+            parts.push("\n");
           }
-          parts.push("\n");
-          parts.push(event.node.literal ?? "");
-          parts.push("```\n");
-        } else {
           let contents = event.node.literal ?? "";
           if (contents.endsWith("\n")) {
             contents = contents.substring(0, contents.length - 1);
           }
+          let first = true;
           for (const line of contents.split("\n")) {
-            parts.push("    ");
+            if (line === '') {
+              if (!first || event.node._isFenced) {
+                parts.push(...prefixTrimRight(prefix));
+              } else {
+                first = false;
+              }
+              parts.push("\n");
+              continue;
+            }
+
+            if (!first || event.node._isFenced) {
+              parts.push(...prefix);
+            } else {
+              first = false;
+            }
+            if (!event.node._isFenced) {
+              parts.push("    ");
+            }
             parts.push(line);
             parts.push("\n");
+          }
+          if (event.node._isFenced) {
+            parts.push(...prefix);
+            parts.push("```\n");
           }
         }
         break;
       case "list":
+        if (event.entering) {
+          firstBlock = true;
+        } else {
+          firstBlock = false;
+        }
         break;
       case "item":
         if (event.entering) {
           if (event.node.listType === 'bullet') {
             parts.push("- ");
+            prefix.push("  ");
           } else {
-            parts.push(event.node.listStart.toString(), event.node.listDelimiter, " ");
+            const numbering = event.node.listStart.toString();
+            parts.push(numbering, event.node.listDelimiter, " ");
+            prefix.push(" ".repeat(numbering.length + 2));
           }
           firstBlock = true;
         } else {
+          firstBlock = false;
+          prefix.pop();
+        }
+        break;
+      case "block_quote":
+        if (event.entering) {
+          parts.push("> ");
+          prefix.push('> ');
+          firstBlock = true;
+        } else {
+          prefix.pop();
           firstBlock = false;
         }
         break;
@@ -143,6 +185,25 @@ export function filter(doc: string): string {
     }
   }
   return parts.join("");
+}
+
+function prefixTrimRight(prefix: string[]): string[] {
+  for (let i = prefix.length - 1; i >= 0; i--) {
+    const trimmed = prefix[i].trimEnd();
+    if (trimmed !== '') {
+      if (trimmed === prefix[i]) {
+        if (i + 1 === prefix.length) {
+          return prefix;
+        }
+        return prefix.slice(0, i + 1);
+      } else {
+        const newArray = prefix.slice(0, i);
+        newArray.push(trimmed);
+        return newArray;
+      }
+    }
+  }
+  return [];
 }
 
 async function run(write: boolean, args: string[]): Promise<void> {
