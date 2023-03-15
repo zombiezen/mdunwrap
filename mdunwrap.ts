@@ -39,12 +39,13 @@ export function filter(doc: string): string {
     if (event.entering && isBlock(event.node)) {
       if (firstBlock) {
         firstBlock = false;
-      } else {
+      } else if (event.node.type !== "item" || event.node.parent?.listTight === false) {
         parts.push("\n");
       }
     }
     switch (event.node.type) {
       case "text":
+        // TODO(soon): Escape characters as needed.
         parts.push(event.node.literal ?? "<null>");
         break;
       case "linebreak":
@@ -57,6 +58,40 @@ export function filter(doc: string): string {
       case "thematic_break":
         parts.push("---\n");
         break;
+      case "code":
+        parts.push("`");
+        // TODO(soon): Escape characters as needed.
+        parts.push(event.node.literal ?? "<null>");
+        parts.push("`");
+        break;
+      case "link":
+        if (event.entering) {
+          parts.push("[");
+        } else {
+          parts.push("](");
+          parts.push(event.node.destination ?? "");
+          parts.push(")");
+        }
+        break;
+      case "image":
+        if (event.entering) {
+          parts.push("![");
+        } else {
+          parts.push("](");
+          parts.push(event.node.destination ?? "");
+          parts.push(")");
+        }
+        break;
+      case "heading":
+        if (event.entering) {
+          for (let i = 0; i < event.node.level; i++) {
+            parts.push("#");
+          }
+          parts.push(" ");
+        } else {
+          parts.push("\n");
+        }
+        break;
       case "code_block":
         if (event.node._isFenced) {
           parts.push("```");
@@ -65,7 +100,7 @@ export function filter(doc: string): string {
           }
           parts.push("\n");
           parts.push(event.node.literal ?? "");
-          parts.push("```\n\n");
+          parts.push("```\n");
         } else {
           let contents = event.node.literal ?? "";
           if (contents.endsWith("\n")) {
@@ -76,6 +111,20 @@ export function filter(doc: string): string {
             parts.push(line);
             parts.push("\n");
           }
+        }
+        break;
+      case "list":
+        break;
+      case "item":
+        if (event.entering) {
+          if (event.node.listType === 'bullet') {
+            parts.push("- ");
+          } else {
+            parts.push(event.node.listStart.toString(), event.node.listDelimiter, " ");
+          }
+          firstBlock = true;
+        } else {
+          firstBlock = false;
         }
         break;
       case "paragraph":
