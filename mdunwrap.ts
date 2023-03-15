@@ -60,6 +60,12 @@ export function filter(doc: string): string {
       case "thematic_break":
         parts.push("---\n");
         break;
+      case "emph":
+        parts.push("*");
+        break;
+      case "strong":
+        parts.push("**");
+        break;
       case "code":
         parts.push("`");
         // TODO(soon): Escape characters as needed.
