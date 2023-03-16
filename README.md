@@ -35,8 +35,15 @@ nix run github:zombiezen/mdunwrap -- myfile.md
 Or if you want to install it in your `PATH`:
 
 ```shell
-nix profile install github:zombiezen/mdunwrap
+nix profile install github:zombiezen/mdunwrap &&
+mdunwrap myfile.md
 ```
+
+## Caveats
+
+- mdunwrap attempts to stay true to the original Markdown source,
+  but may make modifications that don't change the rendered output.
+- mdunwrap [does not support tables](https://github.com/zombiezen/mdunwrap/issues/1).
 
 ## License
 
