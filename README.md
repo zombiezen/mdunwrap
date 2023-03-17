@@ -11,14 +11,14 @@ For example, it takes Markdown that looks like this:
 ```markdown
 Hello,
 World!
-This is a single paragraph \
+This is a single paragraph\
 with some breaks.
 ```
 
 into this:
 
 ```markdown
-Hello, World! This is a single paragraph \
+Hello, World! This is a single paragraph\
 with some breaks.
 ```
 

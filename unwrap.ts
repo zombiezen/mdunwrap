@@ -14,9 +14,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { parse as parseFlags } from "https://deno.land/std@0.179.0/flags/mod.ts";
-import { readableStreamFromReader } from "https://deno.land/std@0.179.0/streams/mod.ts";
-
 // @deno-types="npm:@types/commonmark@0.27.5"
 import * as commonmark from "npm:commonmark@0.30.0";
 
@@ -39,7 +36,9 @@ export function filter(doc: string): string {
     if (event.entering && isBlock(event.node)) {
       if (firstBlock) {
         firstBlock = false;
-      } else if (event.node.type !== "item" || event.node.parent?.listTight === false) {
+      } else if (
+        event.node.type !== "item" || event.node.parent?.listTight === false
+      ) {
         parts.push(...prefixTrimRight(prefix));
         parts.push("\n");
         parts.push(...prefix);
@@ -115,7 +114,7 @@ export function filter(doc: string): string {
           }
           let first = true;
           for (const line of contents.split("\n")) {
-            if (line === '') {
+            if (line === "") {
               if (!first || event.node._isFenced) {
                 parts.push(...prefixTrimRight(prefix));
               } else {
@@ -151,7 +150,7 @@ export function filter(doc: string): string {
         break;
       case "item":
         if (event.entering) {
-          if (event.node.listType === 'bullet') {
+          if (event.node.listType === "bullet") {
             parts.push("- ");
             prefix.push("  ");
           } else {
@@ -168,7 +167,7 @@ export function filter(doc: string): string {
       case "block_quote":
         if (event.entering) {
           parts.push("> ");
-          prefix.push('> ');
+          prefix.push("> ");
           firstBlock = true;
         } else {
           prefix.pop();
@@ -196,7 +195,7 @@ export function filter(doc: string): string {
 function prefixTrimRight(prefix: string[]): string[] {
   for (let i = prefix.length - 1; i >= 0; i--) {
     const trimmed = prefix[i].trimEnd();
-    if (trimmed !== '') {
+    if (trimmed !== "") {
       if (trimmed === prefix[i]) {
         if (i + 1 === prefix.length) {
           return prefix;
@@ -210,65 +209,6 @@ function prefixTrimRight(prefix: string[]): string[] {
     }
   }
   return [];
-}
-
-async function run(write: boolean, args: string[]): Promise<void> {
-  if (args.length === 0 && !write) {
-    // Simple stdin, stdout.
-    const input = await readAllString(Deno.stdin.readable);
-    const output = (new TextEncoder()).encode(filter(input));
-    await Deno.stdout.write(output);
-  } else if (args.length === 0 && write) {
-    await Deno.stderr.write(
-      new TextEncoder().encode(
-        "mdunwrap: must include filenames with -w option",
-      ),
-    );
-  } else {
-    const enc = new TextEncoder();
-    for (const fname of args) {
-      const f = await Deno.open(fname, { read: true, write });
-      try {
-        // TODO(someday): We should be able to use readAllString(f.readable),
-        // but as of Deno 1.31.1, https://github.com/denoland/deno/issues/17828
-        // causes its usage to automatically close the file.
-        const input = await readAllString(
-          readableStreamFromReader(nopCloser(f)),
-        );
-
-        const output = enc.encode(filter(input));
-        if (write) {
-          await f.seek(0, Deno.SeekMode.Start);
-          await f.truncate();
-          await f.write(output);
-        } else {
-          await Deno.stdout.write(output);
-        }
-      } finally {
-        f.close();
-      }
-    }
-  }
-}
-
-async function readAllString(r: ReadableStream<Uint8Array>): Promise<string> {
-  const parts: string[] = [];
-  const sink = new WritableStream<string>({
-    write(chunk) {
-      parts.push(chunk);
-    },
-  });
-  await r.pipeThrough(new TextDecoderStream()).pipeTo(sink);
-  return parts.join("");
-}
-
-function nopCloser(r: Deno.Reader): Deno.Reader & Deno.Closer {
-  return {
-    read(p) {
-      return r.read(p);
-    },
-    close() {},
-  };
 }
 
 const BLOCK_TYPES = new Set<commonmark.NodeType>([
@@ -286,12 +226,4 @@ const BLOCK_TYPES = new Set<commonmark.NodeType>([
 /** Reports whether a node is a block, excluding `document`. */
 function isBlock(node: commonmark.Node): boolean {
   return BLOCK_TYPES.has(node.type);
-}
-
-if (import.meta.main) {
-  const flags = parseFlags(Deno.args, {
-    boolean: ["w"],
-    string: ["_"],
-  });
-  run(flags.w, flags._.map((a) => a.toString()));
 }

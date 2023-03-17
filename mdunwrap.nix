@@ -5,9 +5,9 @@
 }:
 
 let
-  entrypoint = "mdunwrap.ts";
+  entrypoint = "main.ts";
   testFiles = [
-    "mdunwrap_test.ts"
+    "unwrap_test.ts"
   ];
   vendorHash = "sha256-1XxJtHqjtqWUaLoXA5lQWA/dnXIIPXnca+KT15aXm3Q=";
 

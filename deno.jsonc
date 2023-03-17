@@ -6,6 +6,9 @@
   "fmt": {
     "files": {
       "exclude": ["testdata/"]
+    },
+    "options": {
+      "proseWrap": "preserve"
     }
   }
 }

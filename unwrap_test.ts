@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.179.0/testing/asserts.ts";
 import * as path from "https://deno.land/std@0.179.0/path/mod.ts";
-import { filter } from "./mdunwrap.ts";
+import { filter } from "./unwrap.ts";
 
 Deno.test(async function filterTest(t) {
   const dataDirectory = "testdata";
