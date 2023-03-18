@@ -46,8 +46,7 @@ export function filter(doc: string): string {
     }
     switch (event.node.type) {
       case "text":
-        // TODO(soon): Escape characters as needed.
-        parts.push(event.node.literal ?? "<null>");
+        parts.push(event.node.literal !== null ? unescapeText(event.node.literal) : "<null>");
         break;
       case "linebreak":
         parts.push("\\\n");
@@ -209,6 +208,43 @@ function prefixTrimRight(prefix: string[]): string[] {
     }
   }
   return [];
+}
+
+const MUST_ESCAPE = new Set<string>([
+  '![',
+  '#',
+  '&',
+  '[',
+  '*',
+  '_',
+  '|',
+  '\\',
+  '<',
+  '`',
+]);
+
+function unescapeText(s: string): string {
+  let start = 0;
+  let result = "";
+  for (let i = 0; i < s.length; i++) {
+    for (const seq of MUST_ESCAPE) {
+      if (s.startsWith(seq, i)) {
+        if (start < i) {
+          result += s.substring(start, i);
+        }
+        start = i + seq.length;
+        for (let j = 0; j < s.length; j++) {
+          result += "\\" + seq[j];
+        }
+        i += seq.length - 1;
+        break;
+      }
+    }
+  }
+  if (start < s.length) {
+    result += s.substring(start);
+  }
+  return result;
 }
 
 const BLOCK_TYPES = new Set<commonmark.NodeType>([
